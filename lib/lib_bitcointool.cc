@@ -26,11 +26,13 @@
 // Magic glue for redirection
 namespace {
 std::function<int(const char*, size_t)> callback;
-extern "C" int redirector(const char* buf, size_t len) { callback(buf, len); }
+extern "C" int redirector(const char* buf, size_t len) {
+  return (callback(buf, len));
+}
 }
 
 LibBitcoinTool::LibBitcoinTool() {
-  // bind callback to our updateMap() member fn
+  // bind callback to our updateKeys() member fn
   using namespace std::placeholders;
   callback = std::bind(&LibBitcoinTool::updateKeys, this, _1, _2);
 }

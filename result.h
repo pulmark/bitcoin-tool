@@ -1,6 +1,10 @@
 #ifndef BITCOIN_INCLUDE_RESULT_H
 #define BITCOIN_INCLUDE_RESULT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** @file result.h
  *  @brief Definitions of different return values from Bitcoin functions.
  *
@@ -9,18 +13,18 @@
 
 /** All possible return values for bitcoin functions */
 typedef enum BitcoinResult {
-	BITCOIN_SUCCESS,
-	BITCOIN_ERROR, /* general error */
-	BITCOIN_ERROR_NOT_IMPLEMENTED,
-	BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT,
-	BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT,
-	BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL,
-	BITCOIN_ERROR_CHECKSUM_FAILURE,
-	BITCOIN_ERROR_INVALID_FORMAT,
-	BITCOIN_ERROR_IMPOSSIBLE_CONVERSION,
-	BITCOIN_ERROR_FILE,
-	BITCOIN_ERROR_LIBRARY_FAILURE,
-	BITCOIN_ERROR_END_OF_FILE
+  BITCOIN_SUCCESS,
+  BITCOIN_ERROR, /* general error */
+  BITCOIN_ERROR_NOT_IMPLEMENTED,
+  BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT,
+  BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT,
+  BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL,
+  BITCOIN_ERROR_CHECKSUM_FAILURE,
+  BITCOIN_ERROR_INVALID_FORMAT,
+  BITCOIN_ERROR_IMPOSSIBLE_CONVERSION,
+  BITCOIN_ERROR_FILE,
+  BITCOIN_ERROR_LIBRARY_FAILURE,
+  BITCOIN_ERROR_END_OF_FILE
 } BitcoinResult;
 
 /** @brief Return the text message corresponding to a BitcoinResult.
@@ -31,5 +35,8 @@ typedef enum BitcoinResult {
  */
 const char *Bitcoin_ResultString(BitcoinResult result);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

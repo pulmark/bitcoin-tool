@@ -1,6 +1,8 @@
 /* FIXME: this file is getting too long and ugly, I need to cut it up a bit */
 
+#ifndef _POSIX_SOURCE
 #define _POSIX_SOURCE
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -11,6 +13,10 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "hash.h"
 #include "keys.h"
 #include "utility.h"
@@ -19,60 +25,67 @@
 #include "result.h"
 #include "prefix.h"
 
-#define BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_CHANGE_CHARS 3
-#define BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_INSERT_CHARS 3
-#define BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_REMOVE_CHARS 3
+const int BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_CHANGE_CHARS = 3;
+const int BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_INSERT_CHARS = 3;
+const int BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_REMOVE_CHARS = 3;
 
 typedef struct BitcoinTool BitcoinTool;
 typedef struct BitcoinToolOptions BitcoinToolOptions;
+
+enum InputType {
+    INPUT_TYPE_NONE,
+    INPUT_TYPE_ADDRESS,
+    INPUT_TYPE_PUBLIC_KEY_RIPEMD160,
+    INPUT_TYPE_PUBLIC_KEY_SHA256,
+    INPUT_TYPE_PUBLIC_KEY,
+    INPUT_TYPE_PRIVATE_KEY_WIF,
+    INPUT_TYPE_PRIVATE_KEY,
+    INPUT_TYPE_MINI_PRIVATE_KEY
+};
+
+enum InputFormat {
+    INPUT_FORMAT_NONE,
+    INPUT_FORMAT_RAW,
+    INPUT_FORMAT_HEX,
+    INPUT_FORMAT_BASE58,
+    INPUT_FORMAT_BASE58CHECK
+};
+
+enum OutputType {
+    OUTPUT_TYPE_NONE,
+    OUTPUT_TYPE_ALL,
+    OUTPUT_TYPE_ADDRESS,
+    OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160,
+    OUTPUT_TYPE_PUBLIC_KEY_SHA256,
+    OUTPUT_TYPE_PUBLIC_KEY,
+    OUTPUT_TYPE_PRIVATE_KEY_WIF,
+    OUTPUT_TYPE_PRIVATE_KEY
+};
+
+enum OutputFormat {
+    OUTPUT_FORMAT_NONE,
+    OUTPUT_FORMAT_RAW,
+    OUTPUT_FORMAT_HEX,
+    OUTPUT_FORMAT_BASE58,
+    OUTPUT_FORMAT_BASE58CHECK
+};
+
+enum PublicKeyCompression {
+    PUBLIC_KEY_COMPRESSION_AUTO,
+    PUBLIC_KEY_COMPRESSION_COMPRESSED,
+    PUBLIC_KEY_COMPRESSION_UNCOMPRESSED
+};
+
 
 struct BitcoinToolOptions {
 	const char *input;
 	const char *input_file;
 
-	enum InputType {
-		INPUT_TYPE_NONE,
-		INPUT_TYPE_ADDRESS,
-		INPUT_TYPE_PUBLIC_KEY_RIPEMD160,
-		INPUT_TYPE_PUBLIC_KEY_SHA256,
-		INPUT_TYPE_PUBLIC_KEY,
-		INPUT_TYPE_PRIVATE_KEY_WIF,
-		INPUT_TYPE_PRIVATE_KEY,
-		INPUT_TYPE_MINI_PRIVATE_KEY
-	} input_type;
-
-	enum InputFormat {
-		INPUT_FORMAT_NONE,
-		INPUT_FORMAT_RAW,
-		INPUT_FORMAT_HEX,
-		INPUT_FORMAT_BASE58,
-		INPUT_FORMAT_BASE58CHECK
-	} input_format;
-
-	enum OutputType {
-		OUTPUT_TYPE_NONE,
-		OUTPUT_TYPE_ALL,
-		OUTPUT_TYPE_ADDRESS,
-		OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160,
-		OUTPUT_TYPE_PUBLIC_KEY_SHA256,
-		OUTPUT_TYPE_PUBLIC_KEY,
-		OUTPUT_TYPE_PRIVATE_KEY_WIF,
-		OUTPUT_TYPE_PRIVATE_KEY
-	} output_type;
-
-	enum OutputFormat {
-		OUTPUT_FORMAT_NONE,
-		OUTPUT_FORMAT_RAW,
-		OUTPUT_FORMAT_HEX,
-		OUTPUT_FORMAT_BASE58,
-		OUTPUT_FORMAT_BASE58CHECK
-	} output_format;
-
-	enum PublicKeyCompression {
-		PUBLIC_KEY_COMPRESSION_AUTO,
-		PUBLIC_KEY_COMPRESSION_COMPRESSED,
-		PUBLIC_KEY_COMPRESSION_UNCOMPRESSED
-	} public_key_compression;
+    enum InputType input_type;
+    enum InputFormat input_format;
+    enum OutputType output_type;
+    enum OutputFormat output_format;
+    enum PublicKeyCompression public_key_compression;
 
 	/* attempt to fix invalid base58check encoded inputs? */
 	unsigned fix_base58;
@@ -130,10 +143,11 @@ struct BitcoinTool {
 
 	FILE *input_file_handle;
 
-	int (*parseOptions)(struct BitcoinTool *self, int argc, char *argv[]);
+    int (*parseOptions)(struct BitcoinTool *self, int argc, const char *argv[]);
 	void (*help)(struct BitcoinTool *self);
 	int (*run)(struct BitcoinTool *self);
 	void (*destroy)(struct BitcoinTool *self);
+    int (*redirect)(const char* buf, size_t len);
 };
 
 static void BitcoinTool_ListInputTypes(FILE *output)
@@ -254,7 +268,7 @@ static void BitcoinTool_help(BitcoinTool *self)
 
 static int BitcoinTool_parseOptions(BitcoinTool *self
 	,int argc
-	,char *argv[]
+    ,const char *argv[]
 )
 {
 	unsigned i = 0;
@@ -262,7 +276,7 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 	BitcoinToolOptions *o = &self->options;
 
 	/* detect key compression where possible */
-	o->public_key_compression = PUBLIC_KEY_COMPRESSION_AUTO;
+    o->public_key_compression = PUBLIC_KEY_COMPRESSION_AUTO;
 
 	/* fail-safe network type - don't assume Bitcoin for raw keys */
 	o->network_type = NULL;
@@ -280,19 +294,19 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			}
 			v = argv[i];
 			if (!strcmp(v, "address")) {
-				o->input_type = INPUT_TYPE_ADDRESS;
+                o->input_type = INPUT_TYPE_ADDRESS;
 			} else if (!strcmp(v, "public-key-rmd")) {
-				o->input_type = INPUT_TYPE_PUBLIC_KEY_RIPEMD160;
+                o->input_type = INPUT_TYPE_PUBLIC_KEY_RIPEMD160;
 			} else if (!strcmp(v, "public-key-sha")) {
-				o->input_type = INPUT_TYPE_PUBLIC_KEY_SHA256;
+                o->input_type = INPUT_TYPE_PUBLIC_KEY_SHA256;
 			} else if (!strcmp(v, "public-key")) {
-				o->input_type = INPUT_TYPE_PUBLIC_KEY;
+                o->input_type = INPUT_TYPE_PUBLIC_KEY;
 			} else if (!strcmp(v, "private-key-wif")) {
-				o->input_type = INPUT_TYPE_PRIVATE_KEY_WIF;
+                o->input_type = INPUT_TYPE_PRIVATE_KEY_WIF;
 			} else if (!strcmp(v, "private-key")) {
-				o->input_type = INPUT_TYPE_PRIVATE_KEY;
+                o->input_type = INPUT_TYPE_PRIVATE_KEY;
 			} else if (!strcmp(v, "mini-private-key")) {
-				o->input_type = INPUT_TYPE_MINI_PRIVATE_KEY;
+                o->input_type = INPUT_TYPE_MINI_PRIVATE_KEY;
 			} else {
 				applog(APPLOG_ERROR, __func__,
 					"Unknown value \"%s\" for --input-type, must be one of:", v
@@ -310,19 +324,19 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			}
 			v = argv[i];
 			if (!strcmp(v, "address")) {
-				o->output_type = OUTPUT_TYPE_ADDRESS;
+                o->output_type = OUTPUT_TYPE_ADDRESS;
 			} else if (!strcmp(v, "public-key-rmd")) {
-				o->output_type = OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160;
+                o->output_type = OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160;
 			} else if (!strcmp(v, "public-key-sha")) {
-				o->output_type = OUTPUT_TYPE_PUBLIC_KEY_SHA256;
+                o->output_type = OUTPUT_TYPE_PUBLIC_KEY_SHA256;
 			} else if (!strcmp(v, "public-key")) {
-				o->output_type = OUTPUT_TYPE_PUBLIC_KEY;
+                o->output_type = OUTPUT_TYPE_PUBLIC_KEY;
 			} else if (!strcmp(v, "private-key-wif")) {
-				o->output_type = OUTPUT_TYPE_PRIVATE_KEY_WIF;
+                o->output_type = OUTPUT_TYPE_PRIVATE_KEY_WIF;
 			} else if (!strcmp(v, "private-key")) {
-				o->output_type = OUTPUT_TYPE_PRIVATE_KEY;
+                o->output_type = OUTPUT_TYPE_PRIVATE_KEY;
 			} else if (!strcmp(v, "all")) {
-				o->output_type = OUTPUT_TYPE_ALL;
+                o->output_type = OUTPUT_TYPE_ALL;
 			} else {
 				applog(APPLOG_ERROR, __func__,
 					"Unknown value \"%s\" for --output-type", v
@@ -340,13 +354,13 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			}
 			v = argv[i];
 			if (!strcmp(v, "raw")) {
-				o->input_format = INPUT_FORMAT_RAW;
+                o->input_format = INPUT_FORMAT_RAW;
 			} else if (!strcmp(v, "hex")) {
-				o->input_format = INPUT_FORMAT_HEX;
+                o->input_format = INPUT_FORMAT_HEX;
 			} else if (!strcmp(v, "base58")) {
-				o->input_format = INPUT_FORMAT_BASE58;
+                o->input_format = INPUT_FORMAT_BASE58;
 			} else if (!strcmp(v, "base58check")) {
-				o->input_format = INPUT_FORMAT_BASE58CHECK;
+                o->input_format = INPUT_FORMAT_BASE58CHECK;
 			} else {
 				applog(APPLOG_ERROR, __func__,
 					"Unknown value \"%s\" for --input-format, must be one of:", v
@@ -364,13 +378,13 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			}
 			v = argv[i];
 			if (!strcmp(v, "raw")) {
-				o->output_format = OUTPUT_FORMAT_RAW;
+                o->output_format = OUTPUT_FORMAT_RAW;
 			} else if (!strcmp(v, "hex")) {
-				o->output_format = OUTPUT_FORMAT_HEX;
+                o->output_format = OUTPUT_FORMAT_HEX;
 			} else if (!strcmp(v, "base58")) {
-				o->output_format = OUTPUT_FORMAT_BASE58;
+                o->output_format = OUTPUT_FORMAT_BASE58;
 			} else if (!strcmp(v, "base58check")) {
-				o->output_format = OUTPUT_FORMAT_BASE58CHECK;
+                o->output_format = OUTPUT_FORMAT_BASE58CHECK;
 			} else {
 				applog(APPLOG_ERROR, __func__,
 					"Unknown value \"%s\" for --output-format, must be one of:", v
@@ -386,11 +400,11 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			}
 			v = argv[i];
 			if (!strcmp(v, "auto")) {
-				o->public_key_compression = PUBLIC_KEY_COMPRESSION_AUTO;
+                o->public_key_compression = PUBLIC_KEY_COMPRESSION_AUTO;
 			} else if (!strcmp(v, "compressed")) {
-				o->public_key_compression = PUBLIC_KEY_COMPRESSION_COMPRESSED;
+                o->public_key_compression = PUBLIC_KEY_COMPRESSION_COMPRESSED;
 			} else if (!strcmp(v, "uncompressed")) {
-				o->public_key_compression = PUBLIC_KEY_COMPRESSION_UNCOMPRESSED;
+                o->public_key_compression = PUBLIC_KEY_COMPRESSION_UNCOMPRESSED;
 			} else {
 				applog(APPLOG_ERROR, __func__,
 					"unknown value \"%s\" for --public-key-compression", v
@@ -438,9 +452,9 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			}
 		} else if (!strcmp(a, "--fix-base58check")) {
 			o->fix_base58 = 1;
-			o->fix_base58_change_chars = BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_CHANGE_CHARS;
-			o->fix_base58_insert_chars = BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_INSERT_CHARS;
-			o->fix_base58_remove_chars = BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_REMOVE_CHARS;
+            o->fix_base58_change_chars = BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_CHANGE_CHARS;
+            o->fix_base58_insert_chars = BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_INSERT_CHARS;
+            o->fix_base58_remove_chars = BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_REMOVE_CHARS;
 		} else if (!strcmp(a, "--fix-base58check-change-chars")) {
 			unsigned parsed_value = 0;
 			if (++i >= argc) {
@@ -511,10 +525,10 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 	}
 
 	if (
-		INPUT_FORMAT_BASE58CHECK == o->input_format
+        INPUT_FORMAT_BASE58CHECK == o->input_format
 		&& (
-			PUBLIC_KEY_COMPRESSION_COMPRESSED == o->public_key_compression
-			|| PUBLIC_KEY_COMPRESSION_UNCOMPRESSED == o->public_key_compression
+            PUBLIC_KEY_COMPRESSION_COMPRESSED == o->public_key_compression
+            || PUBLIC_KEY_COMPRESSION_UNCOMPRESSED == o->public_key_compression
 		)
 	) {
 		applog(APPLOG_WARNING, __func__,
@@ -580,57 +594,57 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 	BitcoinResult result;
 
 	switch (self->options.input_type) {
-		case INPUT_TYPE_MINI_PRIVATE_KEY :
+        case INPUT_TYPE_MINI_PRIVATE_KEY :
 			switch (self->options.output_type) {
-				case OUTPUT_TYPE_ALL :
-				case OUTPUT_TYPE_ADDRESS :
-				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
-				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
-				case OUTPUT_TYPE_PUBLIC_KEY :
-				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
+                case OUTPUT_TYPE_ALL :
+                case OUTPUT_TYPE_ADDRESS :
+                case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+                case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
+                case OUTPUT_TYPE_PUBLIC_KEY :
+                case OUTPUT_TYPE_PRIVATE_KEY_WIF :
 					self->mini_private_key_set = 1;
 					break;
 				default :
 					break;
 			}
-		case INPUT_TYPE_PRIVATE_KEY :
+        case INPUT_TYPE_PRIVATE_KEY :
 			switch (self->options.output_type) {
-				case OUTPUT_TYPE_ALL :
-				case OUTPUT_TYPE_ADDRESS :
-				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
-				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
-				case OUTPUT_TYPE_PUBLIC_KEY :
-				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
+                case OUTPUT_TYPE_ALL :
+                case OUTPUT_TYPE_ADDRESS :
+                case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+                case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
+                case OUTPUT_TYPE_PUBLIC_KEY :
+                case OUTPUT_TYPE_PRIVATE_KEY_WIF :
 					self->private_key_wif_set = 1;
 					break;
-				case OUTPUT_TYPE_PRIVATE_KEY :
+                case OUTPUT_TYPE_PRIVATE_KEY :
 					return BITCOIN_SUCCESS;
 					break;
 				default :
 					break;
 			}
-		case INPUT_TYPE_PRIVATE_KEY_WIF :
+        case INPUT_TYPE_PRIVATE_KEY_WIF :
 			switch (self->options.output_type) {
-				case OUTPUT_TYPE_ALL :
-				case OUTPUT_TYPE_ADDRESS :
-				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
-				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
-				case OUTPUT_TYPE_PUBLIC_KEY :
-				case OUTPUT_TYPE_PRIVATE_KEY :
+                case OUTPUT_TYPE_ALL :
+                case OUTPUT_TYPE_ADDRESS :
+                case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+                case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
+                case OUTPUT_TYPE_PUBLIC_KEY :
+                case OUTPUT_TYPE_PRIVATE_KEY :
 					self->private_key_set = 1;
 					break;
-				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
+                case OUTPUT_TYPE_PRIVATE_KEY_WIF :
 					return BITCOIN_SUCCESS;
 					break;
 				default :
 					break;
 			}
 			switch (self->options.output_type) {
-				case OUTPUT_TYPE_ALL :
-				case OUTPUT_TYPE_ADDRESS :
-				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
-				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
-				case OUTPUT_TYPE_PUBLIC_KEY : {
+                case OUTPUT_TYPE_ALL :
+                case OUTPUT_TYPE_ADDRESS :
+                case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+                case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
+                case OUTPUT_TYPE_PUBLIC_KEY : {
 					if (self->private_key.network_type == NULL) {
 						applog(APPLOG_ERROR, __func__,
 							"Network type is not specified, please set using"
@@ -648,57 +662,57 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 					self->public_key_set = 1;
 					break;
 				}
-				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
-				case OUTPUT_TYPE_PRIVATE_KEY :
+                case OUTPUT_TYPE_PRIVATE_KEY_WIF :
+                case OUTPUT_TYPE_PRIVATE_KEY :
 					return BITCOIN_SUCCESS;
 					break;
 				default :
 					break;
 			}
-		case INPUT_TYPE_PUBLIC_KEY :
+        case INPUT_TYPE_PUBLIC_KEY :
 			switch (self->options.output_type) {
-				case OUTPUT_TYPE_ALL :
-				case OUTPUT_TYPE_ADDRESS :
-				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
-				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
+                case OUTPUT_TYPE_ALL :
+                case OUTPUT_TYPE_ADDRESS :
+                case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+                case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
 					Bitcoin_MakeSHA256FromPublicKey(&self->public_key_sha256, &self->public_key);
 					self->public_key_sha256_set = 1;
 					break;
-				case OUTPUT_TYPE_PUBLIC_KEY :
+                case OUTPUT_TYPE_PUBLIC_KEY :
 					return BITCOIN_SUCCESS;
 					break;
-				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
-				case OUTPUT_TYPE_PRIVATE_KEY :
+                case OUTPUT_TYPE_PRIVATE_KEY_WIF :
+                case OUTPUT_TYPE_PRIVATE_KEY :
 					applog(APPLOG_ERROR, __func__, "impossible conversion");
 					return BITCOIN_ERROR_IMPOSSIBLE_CONVERSION;
 					break;
 				default :
 					break;
 			}
-		case INPUT_TYPE_PUBLIC_KEY_SHA256 :
+        case INPUT_TYPE_PUBLIC_KEY_SHA256 :
 			switch (self->options.output_type) {
-				case OUTPUT_TYPE_ALL :
-				case OUTPUT_TYPE_ADDRESS :
-				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+                case OUTPUT_TYPE_ALL :
+                case OUTPUT_TYPE_ADDRESS :
+                case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 					Bitcoin_MakeRIPEMD160FromSHA256(&self->public_key_ripemd160, &self->public_key_sha256);
 					self->public_key_ripemd160_set = 1;
 					break;
-				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
+                case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
 					return BITCOIN_SUCCESS;
 					break;
-				case OUTPUT_TYPE_PUBLIC_KEY :
-				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
-				case OUTPUT_TYPE_PRIVATE_KEY :
+                case OUTPUT_TYPE_PUBLIC_KEY :
+                case OUTPUT_TYPE_PRIVATE_KEY_WIF :
+                case OUTPUT_TYPE_PRIVATE_KEY :
 					applog(APPLOG_ERROR, __func__, "impossible conversion");
 					return BITCOIN_ERROR_IMPOSSIBLE_CONVERSION;
 					break;
 				default :
 					break;
 			}
-		case INPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+        case INPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 			switch (self->options.output_type) {
-				case OUTPUT_TYPE_ALL :
-				case OUTPUT_TYPE_ADDRESS : {
+                case OUTPUT_TYPE_ALL :
+                case OUTPUT_TYPE_ADDRESS : {
 					/* check if user has asked to override public key prefix */
 					if (self->options.network_type) {
 						self->public_key.network_type = self->options.network_type;
@@ -722,34 +736,34 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 					self->address_set = 1;
 					break;
 				}
-				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+                case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 					return BITCOIN_SUCCESS;
 					break;
-				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
-				case OUTPUT_TYPE_PUBLIC_KEY :
-				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
-				case OUTPUT_TYPE_PRIVATE_KEY :
+                case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
+                case OUTPUT_TYPE_PUBLIC_KEY :
+                case OUTPUT_TYPE_PRIVATE_KEY_WIF :
+                case OUTPUT_TYPE_PRIVATE_KEY :
 					applog(APPLOG_ERROR, __func__, "impossible conversion");
 					return BITCOIN_ERROR_IMPOSSIBLE_CONVERSION;
 					break;
 				default :
 					break;
 			}
-		case INPUT_TYPE_ADDRESS :
+        case INPUT_TYPE_ADDRESS :
 			switch (self->options.output_type) {
-				case OUTPUT_TYPE_ALL :
-				case OUTPUT_TYPE_ADDRESS :
+                case OUTPUT_TYPE_ALL :
+                case OUTPUT_TYPE_ADDRESS :
 					return BITCOIN_SUCCESS;
 					break;
-				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+                case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 					Bitcoin_MakeRIPEMD160FromAddress(&self->public_key_ripemd160, &self->address);
 					self->public_key_ripemd160_set = 1;
 					return BITCOIN_SUCCESS;
 					break;
-				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
-				case OUTPUT_TYPE_PUBLIC_KEY :
-				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
-				case OUTPUT_TYPE_PRIVATE_KEY :
+                case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
+                case OUTPUT_TYPE_PUBLIC_KEY :
+                case OUTPUT_TYPE_PRIVATE_KEY_WIF :
+                case OUTPUT_TYPE_PRIVATE_KEY :
 					applog(APPLOG_ERROR, __func__, "impossible conversion");
 					return BITCOIN_ERROR_IMPOSSIBLE_CONVERSION;
 					break;
@@ -869,13 +883,13 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 
 	/* convert input format to raw data */
 	switch (self->options.input_format) {
-		case INPUT_FORMAT_RAW : {
+        case INPUT_FORMAT_RAW : {
 			/* no translation required, just copy */
 			memcpy(self->input_raw, self->input, self->input_size);
 			self->input_raw_size = self->input_size;
 			break;
 		}
-		case INPUT_FORMAT_HEX : {
+        case INPUT_FORMAT_HEX : {
 			BitcoinResult result = Bitcoin_DecodeHex(
 				self->input_raw, sizeof(self->input_raw), &self->input_raw_size,
 				self->input, self->input_size
@@ -889,7 +903,7 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 			}
 			break;
 		}
-		case INPUT_FORMAT_BASE58 : {
+        case INPUT_FORMAT_BASE58 : {
 			BitcoinResult result = Bitcoin_DecodeBase58(
 				self->input_raw, sizeof(self->input_raw), &self->input_raw_size,
 				self->input, self->input_size
@@ -903,7 +917,7 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 			}
 			break;
 		}
-		case INPUT_FORMAT_BASE58CHECK : {
+        case INPUT_FORMAT_BASE58CHECK : {
 			BitcoinResult result = Bitcoin_DecodeBase58Check(
 				self->input_raw, sizeof(self->input_raw), &self->input_raw_size,
 				self->input, self->input_size
@@ -916,9 +930,9 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 
 				if (self->options.fix_base58) {
 					size_t output_base58_buffer_size = self->input_size + 1;
-					char *output_base58 = calloc(1, output_base58_buffer_size);
+                    char *output_base58 = (char*)calloc(1, output_base58_buffer_size);
 					size_t output_base58_size = 0;
-					int result;
+                    BitcoinResult result;
 
 					result = Bitcoin_FixBase58Check(
 						output_base58, output_base58_buffer_size, &output_base58_size,
@@ -961,7 +975,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 
 	/* check the size of the input matches what we expect for its type */
 	switch (self->options.input_type) {
-		case INPUT_TYPE_MINI_PRIVATE_KEY : {
+        case INPUT_TYPE_MINI_PRIVATE_KEY : {
 			size_t expected_size = BITCOIN_MINI_PRIVATE_KEY_SIZE;
 			char test_buffer[BITCOIN_MINI_PRIVATE_KEY_SIZE + 1];
 			struct BitcoinSHA256 hash;
@@ -1024,7 +1038,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 
 			break;
 		}
-		case INPUT_TYPE_PRIVATE_KEY : {
+        case INPUT_TYPE_PRIVATE_KEY : {
 			size_t expected_size = BITCOIN_PRIVATE_KEY_SIZE;
 			if (input_raw_size != expected_size) {
 				const char *extra_message = "";
@@ -1058,7 +1072,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 			self->private_key_set = 1;
 			break;
 		}
-		case INPUT_TYPE_PRIVATE_KEY_WIF : {
+        case INPUT_TYPE_PRIVATE_KEY_WIF : {
 			if (input_raw_size != BITCOIN_PRIVATE_KEY_WIF_UNCOMPRESSED_SIZE &&
 				input_raw_size != BITCOIN_PRIVATE_KEY_WIF_COMPRESSED_SIZE
 			) {
@@ -1097,7 +1111,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 			self->private_key_wif_set = 1;
 			break;
 		}
-		case INPUT_TYPE_PUBLIC_KEY : {
+        case INPUT_TYPE_PUBLIC_KEY : {
 			if (input_raw_size != BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE &&
 				input_raw_size != BITCOIN_PUBLIC_KEY_COMPRESSED_SIZE
 			) {
@@ -1124,7 +1138,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 			self->public_key_set = 1;
 			break;
 		}
-		case INPUT_TYPE_PUBLIC_KEY_SHA256 : {
+        case INPUT_TYPE_PUBLIC_KEY_SHA256 : {
 			size_t expected_size = BITCOIN_SHA256_SIZE;
 			if (input_raw_size != expected_size) {
 				applog(APPLOG_ERROR, __func__,
@@ -1141,7 +1155,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 			self->public_key_sha256_set = 1;
 			break;
 		}
-		case INPUT_TYPE_PUBLIC_KEY_RIPEMD160 : {
+        case INPUT_TYPE_PUBLIC_KEY_RIPEMD160 : {
 			size_t expected_size = BITCOIN_RIPEMD160_SIZE;
 			if (input_raw_size != expected_size) {
 				applog(APPLOG_ERROR, __func__,
@@ -1158,7 +1172,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 			self->public_key_ripemd160_set = 1;
 			break;
 		}
-		case INPUT_TYPE_ADDRESS : {
+        case INPUT_TYPE_ADDRESS : {
 			size_t expected_size = BITCOIN_ADDRESS_SIZE;
 			if (input_raw_size != expected_size) {
 				applog(APPLOG_ERROR, __func__,
@@ -1189,25 +1203,25 @@ BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
 	FILE *file = stdout;
 
 	struct OutputFormatString {
-		enum OutputFormat output_format;
+        enum OutputFormat output_format;
 		char *name;
 	} output_formats[] = {
-		{ OUTPUT_FORMAT_HEX,         "hex" },
-		{ OUTPUT_FORMAT_BASE58,      "base58" },
-		{ OUTPUT_FORMAT_BASE58CHECK, "base58check" }
+        { OUTPUT_FORMAT_HEX,         "hex" },
+        { OUTPUT_FORMAT_BASE58,      "base58" },
+        { OUTPUT_FORMAT_BASE58CHECK, "base58check" }
 	}, *output_format = NULL;
 
 	struct OutputTypeString {
-		enum OutputType output_type;
+        enum OutputType output_type;
 		char *name;
 		int is_set;
 	} output_types[] = {
-		{ OUTPUT_TYPE_ADDRESS,              "address" },
-		{ OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160, "public-key-ripemd160" },
-		{ OUTPUT_TYPE_PUBLIC_KEY_SHA256,    "public-key-sha256" },
-		{ OUTPUT_TYPE_PUBLIC_KEY,           "public-key" },
-		{ OUTPUT_TYPE_PRIVATE_KEY_WIF,      "private-key-wif" },
-		{ OUTPUT_TYPE_PRIVATE_KEY,          "private-key" }
+        { OUTPUT_TYPE_ADDRESS,              "address" },
+        { OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160, "public-key-ripemd160" },
+        { OUTPUT_TYPE_PUBLIC_KEY_SHA256,    "public-key-sha256" },
+        { OUTPUT_TYPE_PUBLIC_KEY,           "public-key" },
+        { OUTPUT_TYPE_PRIVATE_KEY_WIF,      "private-key-wif" },
+        { OUTPUT_TYPE_PRIVATE_KEY,          "private-key" }
 	}, *output_type = NULL;
 
 	for (output_type = output_types;
@@ -1221,18 +1235,26 @@ BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
 			output_format++
 		) {
 			if (
-				(output_type->output_type == OUTPUT_TYPE_ADDRESS && self->address_set) ||
-				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 && self->public_key_ripemd160_set) ||
-				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_SHA256 && self->public_key_sha256_set) ||
-				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY && self->public_key_set) ||
-				(output_type->output_type == OUTPUT_TYPE_PRIVATE_KEY_WIF && self->private_key_wif_set) ||
-				(output_type->output_type == OUTPUT_TYPE_PRIVATE_KEY && self->private_key_set)
+                (output_type->output_type == OUTPUT_TYPE_ADDRESS && self->address_set) ||
+                (output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 && self->public_key_ripemd160_set) ||
+                (output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_SHA256 && self->public_key_sha256_set) ||
+                (output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY && self->public_key_set) ||
+                (output_type->output_type == OUTPUT_TYPE_PRIVATE_KEY_WIF && self->private_key_wif_set) ||
+                (output_type->output_type == OUTPUT_TYPE_PRIVATE_KEY && self->private_key_set)
 			) {
 				self->options.output_type = output_type->output_type;
 				self->options.output_format = output_format->output_format;
-				fprintf(file, "%s.%s:",
-					output_type->name, output_format->name
-				);
+                if (!self->redirect)
+                {
+                    fprintf(file, "%s.%s:", output_type->name, output_format->name);
+                }
+                else
+                {
+                    int len = 2 + strlen(output_type->name) + strlen(output_format->name);
+                    char buf[len];
+                    sprintf(buf, "%s.%s:", output_type->name, output_format->name);
+                    self->redirect(buf, len);
+                }
 				Bitcoin_WriteOutput(self);
 			}
 		}
@@ -1247,32 +1269,32 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 	size_t output_raw_size = 0;
 	int bytes_wrote = 0;
 
-	if (self->options.output_type == OUTPUT_TYPE_ALL) {
+    if (self->options.output_type == OUTPUT_TYPE_ALL) {
 		return Bitcoin_WriteAllOutput(self);
 	}
 
 	switch (self->options.output_type) {
-		case OUTPUT_TYPE_ADDRESS :
+        case OUTPUT_TYPE_ADDRESS :
 			output_raw_size = BITCOIN_ADDRESS_SIZE;
 			assert(sizeof(self->output_raw) >= output_raw_size);
 			memcpy(self->output_raw, self->address.data, output_raw_size);
 			break;
-		case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+        case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 			output_raw_size = BITCOIN_RIPEMD160_SIZE;
 			assert(sizeof(self->output_raw) >= output_raw_size);
 			memcpy(self->output_raw, self->public_key_ripemd160.data, output_raw_size);
 			break;
-		case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
+        case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
 			output_raw_size = BITCOIN_SHA256_SIZE;
 			assert(sizeof(self->output_raw) >= output_raw_size);
 			memcpy(self->output_raw, self->public_key_sha256.data, output_raw_size);
 			break;
-		case OUTPUT_TYPE_PUBLIC_KEY :
+        case OUTPUT_TYPE_PUBLIC_KEY :
 			output_raw_size = BitcoinPublicKey_GetSize(&self->public_key);
 			assert(sizeof(self->output_raw) >= output_raw_size);
 			memcpy(self->output_raw, self->public_key.data, output_raw_size);
 			break;
-		case OUTPUT_TYPE_PRIVATE_KEY_WIF :
+        case OUTPUT_TYPE_PRIVATE_KEY_WIF :
 			self->output_raw[0] = BitcoinNetworkType_GetPrivateKeyPrefix(self->private_key.network_type);
 			memcpy(self->output_raw + BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE,
 				self->private_key.data, BITCOIN_PRIVATE_KEY_SIZE
@@ -1305,7 +1327,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 			}
 			assert(sizeof(self->output_raw) >= output_raw_size);
 			break;
-		case OUTPUT_TYPE_PRIVATE_KEY :
+        case OUTPUT_TYPE_PRIVATE_KEY :
 			output_raw_size = BitcoinPrivateKey_GetSize(&self->private_key);
 			assert(sizeof(self->output_raw) >= output_raw_size);
 			memcpy(self->output_raw, self->private_key.data, output_raw_size);
@@ -1319,7 +1341,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 	self->output_raw_size = output_raw_size;
 
 	switch (self->options.output_format) {
-		case OUTPUT_FORMAT_RAW : {
+        case OUTPUT_FORMAT_RAW : {
 			if (output_raw_size > sizeof(self->output_text)) {
 				applog(APPLOG_BUG, __func__,
 					"output_raw buffer (%u) larger than output_text buffer (%u),"
@@ -1331,7 +1353,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 			}
 			break;
 		}
-		case OUTPUT_FORMAT_HEX : {
+        case OUTPUT_FORMAT_HEX : {
 			int lower_case = 1;
 			result = Bitcoin_EncodeHex(
 				self->output_text, sizeof(self->output_text),
@@ -1341,7 +1363,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 			);
 			break;
 		}
-		case OUTPUT_FORMAT_BASE58 : {
+        case OUTPUT_FORMAT_BASE58 : {
 			result = Bitcoin_EncodeBase58(
 				self->output_text, sizeof(self->output_text),
 				&self->output_text_size,
@@ -1349,7 +1371,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 			);
 			break;
 		}
-		case OUTPUT_FORMAT_BASE58CHECK : {
+        case OUTPUT_FORMAT_BASE58CHECK : {
 			result = Bitcoin_EncodeBase58Check(
 				self->output_text, sizeof(self->output_text),
 				&self->output_text_size,
@@ -1382,17 +1404,24 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 		return BITCOIN_ERROR_INVALID_FORMAT;
 	}
 
-	bytes_wrote = fwrite(self->output_text, 1, self->output_text_size, stdout);
-	if (bytes_wrote < 0) {
+    if (self->redirect)
+        bytes_wrote = self->redirect(self->output_text, self->output_text_size);
+    else
+        bytes_wrote = fwrite(self->output_text, 1, self->output_text_size, stdout);
+
+    if (bytes_wrote < 0) {
 		applog(APPLOG_ERROR, __func__, "Error writing output (%s)", strerror(errno));
 	} else if (bytes_wrote < self->output_text_size) {
 		applog(APPLOG_ERROR, __func__, "Error writing output, short write");
 	}
 
-	/* output a newline for clarity if we're on a TTY */
-	if (self->options.batch || isatty(fileno(stdin))) {
-		putchar('\n');
-	}
+    if (!self->redirect)
+    {
+        /* output a newline for clarity if we're on a TTY */
+        if (self->options.batch || isatty(fileno(stdin))) {
+            putchar('\n');
+        }
+    }
 
 	return BITCOIN_SUCCESS;
 }
@@ -1407,17 +1436,17 @@ static int BitcoinTool_run(BitcoinTool *self)
 	/* has user asked to override public key compression? */
 	switch (self->options.public_key_compression) {
 		/* user wants compressed public key */
-		case PUBLIC_KEY_COMPRESSION_COMPRESSED :
+        case PUBLIC_KEY_COMPRESSION_COMPRESSED :
 			self->private_key.public_key_compression =
 				BITCOIN_PUBLIC_KEY_COMPRESSED;
 			break;
 		/* user wants uncompressed public key */
-		case PUBLIC_KEY_COMPRESSION_UNCOMPRESSED :
+        case PUBLIC_KEY_COMPRESSION_UNCOMPRESSED :
 			self->private_key.public_key_compression =
 				BITCOIN_PUBLIC_KEY_UNCOMPRESSED;
 			break;
 		/* use the compression specified in the private key */
-		case PUBLIC_KEY_COMPRESSION_AUTO :
+        case PUBLIC_KEY_COMPRESSION_AUTO :
 		default :
 			break;
 	}
@@ -1469,13 +1498,21 @@ BitcoinTool *BitcoinTool_create(void)
 	self->run = BitcoinTool_run;
 	self->destroy = BitcoinTool_destroy;
 
+    /* callback for redirecting program output */
+    self->redirect = NULL;
+
 	self->private_key.network_type =
 	self->public_key.network_type = NULL;
 
 	return self;
 }
 
-int main(int argc, char *argv[])
+#ifdef __cplusplus
+}
+#endif
+
+#ifndef LIB_BITCOINTOOL
+int main(int argc, const char *argv[])
 {
 	BitcoinTool *bat = BitcoinTool_create();
 	int result = 0;
@@ -1489,3 +1526,5 @@ int main(int argc, char *argv[])
 
 	return result ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+#endif
+

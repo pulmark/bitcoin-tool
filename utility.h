@@ -1,14 +1,18 @@
 #ifndef BITCOIN_INCLUDE_UTILITY_H
 #define BITCOIN_INCLUDE_UTILITY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** @file utility.h
  *  @brief Function prototypes for utility functions.
  *
  *  @author Matthew Anger
  */
 
-#include <stdlib.h> /* size_t type */
 #include <stdint.h> /* uint* types */
+#include <stdlib.h> /* size_t type */
 #include "result.h"
 
 /** @brief Convert ASCII hex digit to its value.
@@ -30,11 +34,9 @@ int Bitcoin_DecodeHexChar(uint_fast8_t *output, char c);
 
  *  @return BITCOIN_SUCCESS if chars were valid.
  */
-BitcoinResult Bitcoin_DecodeHex(
-	void *output, size_t output_size,
-	size_t *decoded_output_size,
-	const char *source, size_t source_size
-);
+BitcoinResult Bitcoin_DecodeHex(void *output, size_t output_size,
+                                size_t *decoded_output_size, const char *source,
+                                size_t source_size);
 
 /** @brief Convert multiple bytes of data to ASCII hex digits.
  *
@@ -52,12 +54,9 @@ BitcoinResult Bitcoin_DecodeHex(
 
  *  @return BITCOIN_SUCCESS if all the input data was encoded.
  */
-BitcoinResult Bitcoin_EncodeHex(
-	char *output, size_t output_size,
-	size_t *encoded_output_size,
-	const void *source, size_t source_size,
-	int lower_case
-);
+BitcoinResult Bitcoin_EncodeHex(char *output, size_t output_size,
+                                size_t *encoded_output_size, const void *source,
+                                size_t source_size, int lower_case);
 
 /** @brief Output the hex representation of a pointer to byte values,
  *         to standard output.
@@ -75,5 +74,8 @@ void Bitcoin_OutputHex(const void *source, size_t source_size);
  */
 void Bitcoin_ReverseBytes(void *buffer, size_t size);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

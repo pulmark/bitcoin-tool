@@ -7,19 +7,23 @@
  *  @author Matthew Anger
  */
 
-#include "hash.h" /* BITCOIN_RIPEMD160_SIZE */
-#include "result.h" /* BitcoinResult */
+#include "hash.h"    /* BITCOIN_RIPEMD160_SIZE */
+#include "result.h"  /* BitcoinResult */
 #include "utility.h" /* uint_max2 */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* declare Bitcoin address format */
 
 #define BITCOIN_ADDRESS_VERSION_SIZE 1
-#define BITCOIN_ADDRESS_SIZE (BITCOIN_ADDRESS_VERSION_SIZE + BITCOIN_RIPEMD160_SIZE)
+#define BITCOIN_ADDRESS_SIZE \
+  (BITCOIN_ADDRESS_VERSION_SIZE + BITCOIN_RIPEMD160_SIZE)
 #define BITCOIN_TEXT_ADDRESS_MAX_SIZE (BITCOIN_ADDRESS_SIZE)
 
-struct BitcoinAddress
-{
-	unsigned char data[BITCOIN_ADDRESS_SIZE];
+struct BitcoinAddress {
+  unsigned char data[BITCOIN_ADDRESS_SIZE];
 };
 
 /* elliptic curve public key declarations */
@@ -29,24 +33,23 @@ struct BitcoinAddress
 #define BITCOIN_PUBLIC_KEY_MAX_SIZE (BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE)
 
 enum BitcoinPublicKeyCompression {
-	BITCOIN_PUBLIC_KEY_EMPTY,
-	BITCOIN_PUBLIC_KEY_COMPRESSED,
-	BITCOIN_PUBLIC_KEY_UNCOMPRESSED
+  BITCOIN_PUBLIC_KEY_EMPTY,
+  BITCOIN_PUBLIC_KEY_COMPRESSED,
+  BITCOIN_PUBLIC_KEY_UNCOMPRESSED
 };
 
-struct BitcoinPublicKey
-{
-	unsigned char data[BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE];
+struct BitcoinPublicKey {
+  unsigned char data[BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE];
 
-/*
-Compression flag - do we compress the public key representation (store just
-the x coordinate), or leave the uncompressed key as-is (store both x and y
-coordinates).
-*/
-	enum BitcoinPublicKeyCompression compression;
+  /*
+  Compression flag - do we compress the public key representation (store just
+  the x coordinate), or leave the uncompressed key as-is (store both x and y
+  coordinates).
+  */
+  enum BitcoinPublicKeyCompression compression;
 
-/* Network type	(prefix byte on addresses) */
-	const struct BitcoinNetworkType *network_type;
+  /* Network type	(prefix byte on addresses) */
+  const struct BitcoinNetworkType *network_type;
 };
 
 /* private key defines */
@@ -61,33 +64,28 @@ which comes directly after the private key.  */
 #define BITCOIN_PRIVATE_KEY_WIF_COMPRESSION_FLAG_COMPRESSED 1
 
 /* WIF sizes (not including base58check checksum, we treat that seperately) */
-#define BITCOIN_PRIVATE_KEY_WIF_UNCOMPRESSED_SIZE ( \
-	BITCOIN_PRIVATE_KEY_SIZE + \
-	BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE \
-)
-#define BITCOIN_PRIVATE_KEY_WIF_COMPRESSED_SIZE ( \
-	BITCOIN_PRIVATE_KEY_SIZE + \
-	BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE + \
-	BITCOIN_PRIVATE_KEY_WIF_COMPRESSION_FLAG_SIZE \
-)
+#define BITCOIN_PRIVATE_KEY_WIF_UNCOMPRESSED_SIZE \
+  (BITCOIN_PRIVATE_KEY_SIZE + BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE)
+#define BITCOIN_PRIVATE_KEY_WIF_COMPRESSED_SIZE                      \
+  (BITCOIN_PRIVATE_KEY_SIZE + BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE + \
+   BITCOIN_PRIVATE_KEY_WIF_COMPRESSION_FLAG_SIZE)
 
 /* Mini private key format, as used in Casascius physical bitcoins.
    Described here : https://en.bitcoin.it/wiki/Mini_private_key_format
 */
 #define BITCOIN_MINI_PRIVATE_KEY_SIZE 30
 
-struct BitcoinPrivateKey
-{
-	unsigned char data[BITCOIN_PRIVATE_KEY_SIZE];
-/*
-A private key is never actually compressed in the sense that the size
-changes, this flag just indicates wether to generate a compressed or
-uncompressed public key from this private key.
-*/
-	enum BitcoinPublicKeyCompression public_key_compression;
+struct BitcoinPrivateKey {
+  unsigned char data[BITCOIN_PRIVATE_KEY_SIZE];
+  /*
+  A private key is never actually compressed in the sense that the size
+  changes, this flag just indicates wether to generate a compressed or
+  uncompressed public key from this private key.
+  */
+  enum BitcoinPublicKeyCompression public_key_compression;
 
-/* Network type	(prefix byte on addresses) */
-	const struct BitcoinNetworkType *network_type;
+  /* Network type	(prefix byte on addresses) */
+  const struct BitcoinNetworkType *network_type;
 };
 
 /** @brief Check if a public key is not set.
@@ -123,14 +121,14 @@ size_t BitcoinPublicKey_GetSize(const struct BitcoinPublicKey *public_key);
  */
 size_t BitcoinPrivateKey_GetSize(const struct BitcoinPrivateKey *private_key);
 
-
 /** @brief Return the size of a private key in Wallet Inport Format, in bytes.
  *
  *  @param private_key[input] Pointer to private key to read.
  *
  *  @return size of private key in bytes, or 0 if failure.
  */
-size_t BitcoinPrivateKey_GetWIFSize(const struct BitcoinPrivateKey *private_key);
+size_t BitcoinPrivateKey_GetWIFSize(
+    const struct BitcoinPrivateKey *private_key);
 
 /** @brief Convert a private key to a public key.
  *
@@ -140,9 +138,8 @@ size_t BitcoinPrivateKey_GetWIFSize(const struct BitcoinPrivateKey *private_key)
  *  @return BitcoinResult indicating error state.
  */
 BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
-	struct BitcoinPublicKey *public_key,
-	const struct BitcoinPrivateKey *private_key
-);
+    struct BitcoinPublicKey *public_key,
+    const struct BitcoinPrivateKey *private_key);
 
 /** @brief Convert a public key to a Bitcoin address structure.
  *
@@ -152,9 +149,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
  *  @return BitcoinResult indicating error state.
  */
 BitcoinResult Bitcoin_MakeAddressFromPublicKey(
-	struct BitcoinAddress *address,
-	const struct BitcoinPublicKey *public_key
-);
+    struct BitcoinAddress *address, const struct BitcoinPublicKey *public_key);
 
 /** @brief Convert a base58 representation of a private key to a raw
  *         private key.
@@ -166,9 +161,8 @@ BitcoinResult Bitcoin_MakeAddressFromPublicKey(
  *  @return BitcoinResult indicating error state.
  */
 BitcoinResult Bitcoin_LoadPrivateKeyFromBase58(
-	struct BitcoinPrivateKey *output_private_key,
-	const char *input_text, size_t input_size
-);
+    struct BitcoinPrivateKey *output_private_key, const char *input_text,
+    size_t input_size);
 
 /** @brief Convert a base58 representation of a public key to a raw
  *         public key.
@@ -180,8 +174,11 @@ BitcoinResult Bitcoin_LoadPrivateKeyFromBase58(
  *  @return BitcoinResult indicating error state.
  */
 BitcoinResult Bitcoin_LoadPublicKeyFromBase58(
-	struct BitcoinPublicKey *output_public_key,
-	const char *input_text, size_t input_size
-);
+    struct BitcoinPublicKey *output_public_key, const char *input_text,
+    size_t input_size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

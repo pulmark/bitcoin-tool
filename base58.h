@@ -19,10 +19,14 @@
  *  @author Matthew Anger
  */
 
-#include <stdlib.h> /* size_t */
 #include <stdint.h> /* uint8_t */
+#include <stdlib.h> /* size_t */
 
 #include "result.h" /* BitcoinResult / BITCOIN_SUCCESS / BITCOIN_ERROR_* */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** Base58Check defines a four byte suffix to be used as the checksum */
 #define BITCOIN_BASE58CHECK_CHECKSUM_SIZE 4
@@ -41,10 +45,9 @@
  *          BITCOIN_SUCCESS if success.
  *          BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL if output buffer too small.
  */
-BitcoinResult Bitcoin_EncodeBase58(
-	char *output, size_t output_size, size_t *encoded_output_size,
-	const void *source, size_t source_size
-);
+BitcoinResult Bitcoin_EncodeBase58(char *output, size_t output_size,
+                                   size_t *encoded_output_size,
+                                   const void *source, size_t source_size);
 
 /** @brief Convert a sequence of bytes to its Base58Check representation.
  *
@@ -60,10 +63,9 @@ BitcoinResult Bitcoin_EncodeBase58(
  *          BITCOIN_SUCCESS if success.
  *          BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL if output buffer too small.
  */
-BitcoinResult Bitcoin_EncodeBase58Check(
-	char *output, size_t output_size, size_t *encoded_output_size,
-	const void *source, size_t source_size
-);
+BitcoinResult Bitcoin_EncodeBase58Check(char *output, size_t output_size,
+                                        size_t *encoded_output_size,
+                                        const void *source, size_t source_size);
 
 /** @brief Convert a Base58 string to its binary representation.
  *         Base58 (non-check) has no checksum to check, so be careful of
@@ -84,10 +86,9 @@ BitcoinResult Bitcoin_EncodeBase58Check(
  *          BITCOIN_SUCCESS if success.
  *          BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL if output buffer too small.
  */
-BitcoinResult Bitcoin_DecodeBase58(
-	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
-	const void *input, size_t input_size
-);
+BitcoinResult Bitcoin_DecodeBase58(uint8_t *output, size_t output_buffer_size,
+                                   size_t *decoded_output_size,
+                                   const void *input, size_t input_size);
 
 /** @brief Convert a Base58Check string to its binary representation.
  *         The checksum is checked during decoding.
@@ -107,10 +108,10 @@ BitcoinResult Bitcoin_DecodeBase58(
  *          BITCOIN_ERROR_CHECKSUM_FAILURE if checksum failed.
  *          BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL if output buffer too small.
  */
-BitcoinResult Bitcoin_DecodeBase58Check(
-	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
-	const void *input, size_t input_size
-);
+BitcoinResult Bitcoin_DecodeBase58Check(uint8_t *output,
+                                        size_t output_buffer_size,
+                                        size_t *decoded_output_size,
+                                        const void *input, size_t input_size);
 
 /** @brief Convert a Base58Check string to its binary representation, changing
  *         characters necessary to make the checksum valid.
@@ -150,12 +151,13 @@ BitcoinResult Bitcoin_DecodeBase58Check(
  *          BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL if output buffer too small.
  */
 BitcoinResult Bitcoin_FixBase58Check(
-	char *fixed_output, size_t fixed_output_buffer_size, size_t *fixed_output_size,
-	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
-	const char *input, size_t input_size,
-	unsigned change_chars,
-	unsigned insert_chars,
-	unsigned remove_chars
-);
+    char *fixed_output, size_t fixed_output_buffer_size,
+    size_t *fixed_output_size, uint8_t *output, size_t output_buffer_size,
+    size_t *decoded_output_size, const char *input, size_t input_size,
+    unsigned change_chars, unsigned insert_chars, unsigned remove_chars);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

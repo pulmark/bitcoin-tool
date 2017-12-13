@@ -242,15 +242,42 @@ BitcoinResult Bitcoin_DecodeBase58Check(
 	return BITCOIN_SUCCESS;
 }
 
+/*
+   There is something weird using this function. The function signature is
+   following:
+
+   BitcoinResult Bitcoin_FixBase58Check(
+    char *fixed_output, size_t fixed_output_buffer_size,
+    size_t *fixed_output_size, uint8_t *output, size_t output_buffer_size,
+    size_t *decoded_output_size, const char *input, size_t input_size,
+    unsigned change_chars, unsigned insert_chars, unsigned remove_chars);
+
+   Noticed in the implementation below that the naming of the last two function
+   input parameters are different. The names are switched.
+
+   This function get called from main and the call follows the signature. So
+   what happens the incoming insert_chars are handled inside function as
+   remove_chars and vice versa. I don't know if this is done by purpose or
+   sit it error ?
+
+   Compiler complains that remove chars are not used at all. So in reality
+   when running the program insert_chars value is not used and remove_chars
+   value is used as insert chars.
+
+   Anyway I changed the implementation so that it matches the signature
+   and usage. I have to ask more details about this issue from maintainers.
+ */
+
 BitcoinResult Bitcoin_FixBase58Check(
 	char *fixed_output, size_t fixed_output_buffer_size, size_t *fixed_output_size,
 	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
 	const char *input, size_t input_size,
 	unsigned change_chars,
-	unsigned remove_chars,
-	unsigned insert_chars
+    unsigned insert_chars,
+    unsigned remove_chars
 )
 {
+
 	/* attempt to 'fix' an invalid base58check string by changing characters
 	until the checksum is valid */
 
@@ -342,7 +369,7 @@ BitcoinResult Bitcoin_FixBase58Check(
 						digits[i] += carry;
 						carry = 0;
 					}
-					if (digits[i] == radix) {
+                    if (digits[i] == (signed)radix) {
 						digits[i] = 0;
 						carry = 1;
 						overflow = i == r-1;

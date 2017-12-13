@@ -144,7 +144,7 @@ struct BitcoinTool {
 	FILE *input_file_handle;
 
     int (*parseOptions)(struct BitcoinTool *self, int argc, const char *argv[]);
-	void (*help)(struct BitcoinTool *self);
+    void (*help)();
 	int (*run)(struct BitcoinTool *self);
 	void (*destroy)(struct BitcoinTool *self);
     int (*redirect)(const char* buf, size_t len);
@@ -184,7 +184,7 @@ static void BitcoinTool_ListOutputFormats(FILE *output)
 	BitcoinTool_ListInputFormats(output);
 }
 
-static void BitcoinTool_help(BitcoinTool *self)
+static void BitcoinTool_help()
 {
 	FILE *file = stderr;
 	fprintf(file,
@@ -271,7 +271,6 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
     ,const char *argv[]
 )
 {
-	unsigned i = 0;
 	int errors = 0;
 	BitcoinToolOptions *o = &self->options;
 
@@ -281,7 +280,7 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 	/* fail-safe network type - don't assume Bitcoin for raw keys */
 	o->network_type = NULL;
 
-	for (i=1; i<argc; i++) {
+    for (int i=1; i<argc; i++) {
 		const char *a = argv[i];
 		const char *v = NULL;
 
@@ -475,7 +474,7 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 		} else if (!strcmp(a, "--ignore-input-errors")) {
 			o->ignore_input_errors = 1;
 		} else if (!strcmp(a, "--help")) {
-			BitcoinTool_help(self);
+            BitcoinTool_help();
 			return 0;
 		} else {
 			applog(APPLOG_ERROR, __func__, "unknown option \"%s\"", a);
@@ -1204,7 +1203,7 @@ BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
 
 	struct OutputFormatString {
         enum OutputFormat output_format;
-		char *name;
+        const char *name;
 	} output_formats[] = {
         { OUTPUT_FORMAT_HEX,         "hex" },
         { OUTPUT_FORMAT_BASE58,      "base58" },
@@ -1213,8 +1212,7 @@ BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
 
 	struct OutputTypeString {
         enum OutputType output_type;
-		char *name;
-		int is_set;
+        const char *name;
 	} output_types[] = {
         { OUTPUT_TYPE_ADDRESS,              "address" },
         { OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160, "public-key-ripemd160" },
@@ -1267,7 +1265,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 {
 	BitcoinResult result = BITCOIN_SUCCESS;
 	size_t output_raw_size = 0;
-	int bytes_wrote = 0;
+    int bytes_wrote = 0;
 
     if (self->options.output_type == OUTPUT_TYPE_ALL) {
 		return Bitcoin_WriteAllOutput(self);
@@ -1411,7 +1409,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 
     if (bytes_wrote < 0) {
 		applog(APPLOG_ERROR, __func__, "Error writing output (%s)", strerror(errno));
-	} else if (bytes_wrote < self->output_text_size) {
+    } else if (bytes_wrote < (int) self->output_text_size) {
 		applog(APPLOG_ERROR, __func__, "Error writing output, short write");
 	}
 

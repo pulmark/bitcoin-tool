@@ -39,7 +39,7 @@ size_t BitcoinPublicKey_GetSize(const struct BitcoinPublicKey *public_key)
 	return 0;
 }
 
-size_t BitcoinPrivateKey_GetSize(const struct BitcoinPrivateKey *private_key)
+size_t BitcoinPrivateKey_GetSize(const struct BitcoinPrivateKey* private_key)
 {
 	return BITCOIN_PRIVATE_KEY_SIZE;
 }
@@ -308,7 +308,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 
 	size = i2o_ECPublicKey(key, NULL);
 
-	if (size != expected_public_key_size) {
+    if (size != (signed) expected_public_key_size) {
 		fprintf(stderr, "%s: invalid public key size (%u), should be %u\n",
 			__func__,
 			(unsigned)size,
@@ -320,7 +320,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 	}
 
 	size2 = i2o_ECPublicKey(key, &public_key_ptr);
-	if (size2 != expected_public_key_size) {
+    if (size2 != (signed) expected_public_key_size) {
 		fprintf(stderr, "%s: invalid public key size (%u), should be %u\n",
 			__func__,
 			(unsigned)size,

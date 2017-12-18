@@ -1,50 +1,49 @@
-#-------------------------------------------------
 #
-# Project created by QtCreator 2017-12-04T14:26:35
+# Project file for QT & qmake to build bitcoint-tool command-line app as static library
 #
-#-------------------------------------------------
 
-QT       -= gui core
+WARNINGS += -Wall
 
-TARGET = bitcointool
+# keep the generated files separated from the source files.
+UI_DIR = uics
+MOC_DIR = mocs
+OBJECTS_DIR = objs
+
 TEMPLATE = lib
 
-CONFIG += c++14 staticlib
+QT -= qt
+QT -= gui 
+QT -= core
+
+CONFIG += c++14 staticlib thread
+
+TARGET = $$OUT_PWD/bitcointool
 
 DEFINES += LIB_BITCOINTOOL
 
-# The following define makes your compiler emit warnings if you use
-# any feature of Qt which has been marked as deprecated (the exact warnings
-# depend on your compiler). Please consult the documentation of the
-# deprecated API in order to know how to port your code away from it.
-DEFINES += QT_DEPRECATED_WARNINGS
-
-# You can also make your code fail to compile if you use deprecated APIs.
-# In order to do so, uncomment the following line.
-# You can also select to disable deprecated APIs only up to a certain version of Qt.
-#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
-
 SOURCES += \
         lib_bitcointool.cc \
-    ../applog.c \
-    ../base58.c \
-    ../combination.c \
-    ../hash.c \
-    ../keys.c \
-    ../main.c \
-    ../prefix.c \
-    ../result.c \
-    ../sha256.c \
-    ../utility.c
+    $$PWD/../applog.c \
+    $$PWD/../base58.c \
+    $$PWD/../combination.c \
+    $$PWD/../hash.c \
+    $$PWD/../keys.c \
+    $$PWD/../main.c \
+    $$PWD/../prefix.c \
+    $$PWD/../result.c \
+    $$PWD/../sha256.c \
+    $$PWD/../utility.c
 
 HEADERS += \
         lib_bitcointool.h \
-    ../applog.h \
-    ../base58.h \
-    ../combination.h \
-    ../hash.h \
-    ../keys.h \
-    ../prefix.h \
-    ../result.h \
-    ../sha256.h \
-    ../utility.h
+    $$PWD/../applog.h \
+    $$PWD/../base58.h \
+    $$PWD/../combination.h \
+    $$PWD/../hash.h \
+    $$PWD/../keys.h \
+    $$PWD/../prefix.h \
+    $$PWD/../result.h \
+    $$PWD/../sha256.h \
+    $$PWD/../utility.h
+
+message($$OUT_PWD)

@@ -34,3 +34,4 @@
 # QT related stuff
 *.pro.user
 .qmake.stash
+./obj/

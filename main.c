@@ -280,7 +280,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 	/* fail-safe network type - don't assume Bitcoin for raw keys */
 	o->network_type = NULL;
 
-    for (int i=1; i<argc; i++) {
+	int i;
+    for(i=1; i<argc; i++) {
 		const char *a = argv[i];
 		const char *v = NULL;
 
